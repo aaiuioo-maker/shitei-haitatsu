@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<title>指定場所配達先一覧 - 11班 116区</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; font-size: 13px; color: #222; }
+
+  /* ===== オープニング ===== */
+  #openingScreen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: fixed; inset: 0; background: #0d1117; z-index: 11000; cursor: pointer; overflow: hidden;
+  }
+  #openingScreen::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(135deg, transparent, transparent 60px, rgba(255,255,255,0.015) 60px, rgba(255,255,255,0.015) 61px);
+  }
+  #openingScreen::after {
+    content: ''; position: absolute; width: 340px; height: 340px; border-radius: 50%;
+    border: 1px solid rgba(255,190,120,0.12); top: 50%; left: 50%;
+    transform: translate(-50%, -50%); animation: ringPulse 4s ease-in-out infinite;
+    box-shadow: 0 0 60px 20px rgba(255,150,80,0.04);
+  }
+  @keyframes ringPulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.4; } 50% { transform: translate(-50%,-50%) scale(1.08); opacity: 1; } }
+  .opening-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  .opening-label { font-family: 'Noto Sans JP', sans-serif; font-weight: 300; font-size: 9px; letter-spacing: 0.45em; color: rgba(255,200,150,0.5); margin-bottom: 22px; animation: fadeUp 0.8s ease 0.2s both; }
+  .opening-hr { width: 44px; height: 1px; background: rgba(255,200,150,0.3); margin-bottom: 28px; animation: fadeUp 0.8s ease 0.35s both; }
+  .opening-title-block { text-align: center; animation: fadeUp 0.8s ease 0.5s both; }
+  .opening-title-sub { font-family: 'Noto Serif JP', serif; font-weight: 300; font-size: 12px; color: rgba(255,210,170,0.6); letter-spacing: 0.55em; margin-bottom: 12px; display: block; }
+  .opening-title-main { font-family: 'Noto Serif JP', serif; font-weight: 400; font-size: 28px; color: #ffe9d6; letter-spacing: 0.16em; display: block; line-height: 1.2; }
+  .opening-deco { display: flex; align-items: center; gap: 10px; margin-top: 30px; animation: fadeUp 0.8s ease 0.65s both; }
+  .opening-deco-line { width: 36px; height: 1px; background: rgba(255,200,150,0.25); }
+  .opening-deco-diamond { width: 5px; height: 5px; border: 1px solid rgba(255,200,150,0.45); transform: rotate(45deg); }
+  .tap-hint { position: absolute; bottom: 44px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; font-size: 9px; color: rgba(255,200,150,0.4); letter-spacing: 0.5em; animation: blinkSoft 2.5s ease-in-out infinite 1.2s; }
+  @keyframes blinkSoft { 0%,100%{opacity:0.25} 50%{opacity:0.7} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ===== ロック画面 ===== */
+  #lockScreen { display: none; position: fixed; inset: 0; background: #0d1117; z-index: 10500; align-items: center; justify-content: center; padding: 16px; }
+  .lock-box { background: #161b22; border: 1px solid #30363d; border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; color: #e6edf3; text-align: center; }
+  .lock-box h3 { margin: 0 0 6px; font-size: 16px; font-family: 'Noto Serif JP', serif; font-weight: 400; letter-spacing: 0.1em; }
+  .lock-box p { margin: 0 0 16px; font-size: 11px; color: #8b949e; line-height: 1.6; }
+  .lock-box input[type=password] { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: #fff; text-align: center; }
+  .lock-box label { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #8b949e; margin: 12px 0; }
+  .lock-box button { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; background: #ff9500; color: #fff; cursor: pointer; }
+  .lock-err { color: #ff6b6b; font-size: 12px; min-height: 18px; margin-top: 10px; }
+
+  /* ===== 本体 ===== */
+  #appContent { display: none; padding: 10px 10px 80px; max-width: 760px; margin: 0 auto; }
+  .head { position: sticky; top: 0; z-index: 50; background: #f4f7f6; padding: 6px 0 8px; }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  h2 { color: #333; font-size: 16px; margin: 0; white-space: nowrap; }
+  .meta { font-size: 11px; color: #888; white-space: nowrap; }
+  .meta b { color: #d0021b; }
+  .progress { height: 6px; background: #e1e6e4; border-radius: 3px; overflow: hidden; margin: 6px 0; }
+  .progress > div { height: 100%; background: #34c759; width: 0; transition: width .3s; }
+  .search { display: flex; gap: 6px; margin-top: 4px; }
+  .search input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 8px; }
+  .search button { padding: 0 12px; border: none; border-radius: 8px; background: #8e8e93; color: #fff; font-weight: bold; font-size: 12px; }
+  .chips { display: flex; gap: 5px; overflow-x: auto; padding: 6px 0 2px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; padding: 6px 11px; border-radius: 16px; border: 1px solid #c8cfcc; background: #fff; font-size: 12px; color: #444; cursor: pointer; white-space: nowrap; }
+  .chip.on { background: #ff9500; border-color: #ff9500; color: #fff; font-weight: bold; }
+  .chip.flag.on { background: #d0021b; border-color: #d0021b; }
+  .chip .cnt { font-size: 10px; opacity: .75; margin-left: 3px; }
+  .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; }
+  .btn-group button { padding: 9px 2px; font-size: 11px; border: none; border-radius: 6px; font-weight: bold; color: #fff; cursor: pointer; }
+  .b-blue { background: #007aff; } .b-green { background: #34c759; } .b-orange { background: #ff9500; } .b-sky { background: #5ac8fa; } .b-gray { background: #8e8e93; } .b-red { background: #ff3b30; } .b-purple { background: #af52de; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .card { background: #fff; border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 5px solid #ff9500; position: relative; }
+  .card.done { opacity: .5; border-left-color: #34c759; }
+  .card.done .c-name { text-decoration: line-through; }
+  .c-top { display: flex; align-items: baseline; gap: 8px; }
+  .c-no { font-size: 10px; color: #aaa; min-width: 18px; }
+  .c-name { font-size: 16px; font-weight: bold; }
+  .c-area { margin-left: auto; font-size: 10px; color: #fff; background: #8e8e93; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .c-addr { font-size: 12px; color: #555; margin: 2px 0 6px 26px; }
+  .c-place { font-size: 15px; font-weight: bold; color: #0b4f9c; background: #eaf3ff; border-radius: 6px; padding: 7px 9px; line-height: 1.45; }
+  .c-place::before { content: '📦 '; }
+  .c-memo { margin-top: 5px; font-size: 13px; font-weight: bold; color: #b00020; background: #fff0f0; border-radius: 6px; padding: 5px 9px; }
+  .c-memo::before { content: '⚠ '; }
+  .c-mymemo { margin-top: 5px; font-size: 12px; color: #6b4e00; background: #fff8dc; border-radius: 6px; padding: 5px 9px; white-space: pre-wrap; }
+  .c-mymemo::before { content: '✎ '; }
+  .c-date { margin-top: 5px; font-size: 11px; color: #666; }
+  .c-date b { color: #333; }
+  .c-btns { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; margin-top: 8px; }
+  .c-btns button { padding: 9px 0; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; color: #fff; cursor: pointer; }
+  .card.done .b-done { background: #8e8e93; }
+  .empty { text-align: center; color: #999; padding: 40px 0; }
+  .tag-new { font-size: 10px; background: #af52de; color: #fff; border-radius: 4px; padding: 1px 5px; }
+
+  /* モーダル */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 9000; align-items: flex-end; justify-content: center; }
+  .modal.show { display: flex; }
+  .sheet { background: #fff; width: 100%; max-width: 560px; border-radius: 14px 14px 0 0; padding: 16px; max-height: 90vh; overflow-y: auto; }
+  .sheet h3 { margin: 0 0 10px; font-size: 15px; }
+  .sheet label { display: block; font-size: 11px; color: #666; margin: 8px 0 3px; }
+  .sheet input, .sheet textarea { width: 100%; padding: 9px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+  .sheet textarea { min-height: 60px; }
+  .sheet .row-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+  .sheet .row-btns button { padding: 11px; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 14px; }
+  .sheet .del { margin-top: 8px; width: 100%; padding: 9px; border: 1px solid #ff3b30; background: #fff; color: #ff3b30; border-radius: 8px; font-weight: bold; }
+  .sheet .hint { font-size: 11px; color: #888; margin-top: 4px; }
+  .menu-list button { display: block; width: 100%; text-align: left; padding: 13px 12px; margin-bottom: 6px; border: 1px solid #e3e3e3; border-radius: 8px; background: #fafafa; font-size: 14px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 13px; z-index: 12000; display: none; }
+  .foot { text-align: center; font-size: 10px; color: #aaa; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<div id="openingScreen" onclick="enterApp()">
+  <div class="opening-inner">
+    <div class="opening-label">第三集配営業部 ・ 11班 116区</div>
+    <div class="opening-hr"></div>
+    <div class="opening-title-block">
+      <span class="opening-title-sub">お 届 け</span>
+      <span class="opening-title-main">指定場所<br>配達先一覧</span>
+    </div>
+    <div class="opening-deco"><div class="opening-deco-line"></div><div class="opening-deco-diamond"></div><div class="opening-deco-line"></div></div>
+  </div>
+  <div class="tap-hint">TAP TO START</div>
+</div>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <h3>🔒 パスワード</h3>
+    <p>お客様情報は暗号化されています。<br>パスワードを入力してください。</p>
+    <input type="password" id="pwInput" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlock()">
+    <label><input type="checkbox" id="pwRemember" checked> この端末で記憶する</label>
+    <button onclick="unlock()">開く</button>
+    <div class="lock-err" id="lockErr"></div>
+  </div>
+</div>
+
+<div id="appContent">
+  <div class="head">
+    <div class="title-row">
+      <h2>指定場所配達先一覧</h2>
+      <div class="meta">11班 116区 ／ 表示 <b id="shownCount">0</b> / <span id="totalCount">0</span>件</div>
+    </div>
+    <div class="progress"><div id="progBar"></div></div>
+    <div class="meta" id="progText" style="text-align:right"></div>
+    <div class="search">
+      <input type="search" id="q" placeholder="名前・住所・指定場所で検索" oninput="render()">
+      <button onclick="document.getElementById('q').value='';render()">クリア</button>
+    </div>
+    <div class="chips" id="areaChips"></div>
+    <div class="chips" id="flagChips"></div>
+    <div class="btn-group">
+      <button class="b-blue" onclick="openEdit(-1)">＋ 追加</button>
+      <button class="b-sky" onclick="cycleSort()" id="sortBtn">帳票順</button>
+      <button class="b-orange" onclick="resetToday()">チェック解除</button>
+      <button class="b-gray" onclick="openMenu()">メニュー</button>
+    </div>
+  </div>
+  <div class="list" id="list"></div>
+  <div class="foot">印刷日 2026-10-05 の帳票より作成 ／ 用済後廃棄の帳票につき取扱注意</div>
+</div>
+
+<!-- 編集 -->
+<div class="modal" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+  <div class="sheet">
+    <h3 id="editTitle">編集</h3>
+    <label>お名前</label><input id="eName">
+    <label>住所</label><input id="eAddr">
+    <label>指定場所</label><textarea id="ePlace"></textarea>
+    <label>自由入力（注意事項）</label><input id="eMemo">
+    <label>実施希望時期</label><input id="eDate" placeholder="例 2026/10/01">
+    <label>自分用メモ</label><textarea id="eMy"></textarea>
+    <div class="hint">変更はこの端末に保存されます。</div>
+    <div class="row-btns">
+      <button class="b-gray" onclick="closeModal('editModal')">キャンセル</button>
+      <button class="b-blue" onclick="saveEdit()">保存</button>
+    </div>
+    <button class="del" id="eDel" onclick="deleteEntry()">この配達先を削除</button>
+  </div>
+</div>
+
+<!-- メニュー -->
+<div class="modal" id="menuModal" onclick="if(event.target===this)closeModal('menuModal')">
+  <div class="sheet menu-list">
+    <h3>メニュー</h3>
+    <button onclick="exportData()">💾 バックアップを保存（JSON）</button>
+    <button onclick="document.getElementById('importFile').click()">📂 バックアップを読み込む</button>
+    <button onclick="restoreOriginal()">↩ 帳票の初期データに戻す</button>
+    <button onclick="lockApp()">🔒 ロックする（記憶したパスワードを消去）</button>
+    <button onclick="closeModal('menuModal')">閉じる</button>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(this)">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 暗号化された帳票データ（AES-256-CBC / PBKDF2-SHA256） =====
+const ENC = {"salt":"0I+egIAU2GrIO2Y8+7FIEw==","iv":"oDZmuqRXBELxFAiD84O8ug==","iter":250000,"ct":"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"};
+
+const LS = {
+  pw: 'shitei116_pw', edits: 'shitei116_entries', my: 'shitei116_mymemo',
+  done: 'shitei116_done', sort: 'shitei116_sort'
+};
+function lsGet(k, def) { try { const v = localStorage.getItem(k); return v === null ? def : JSON.parse(v); } catch (e) { return def; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+let ORIGINAL = [];   // 復号した帳票データ
+let entries = [];    // 表示用（編集を反映）
+let myMemo = {};     // id -> メモ
+let doneMap = {};    // { date: 'YYYY-MM-DD', ids: [] }
+let areaFilter = 'すべて';
+let flags = new Set();
+let sortMode = lsGet(LS.sort, 0);
+let editIdx = -1;
+
+const AREAS = ['醍醐', '西笠取', '東笠取', '菟道', '炭山', '池尾', '日野', '二尾'];
+function areaOf(a) {
+  const s = a.replace(/^京都市伏見区|^宇治市/, '');
+  for (const ar of AREAS) if (s.startsWith(ar)) return ar;
+  return 'その他';
+}
+function mapQuery(a) {
+  if (/^(京都市|宇治市)/.test(a)) return '京都府' + a;
+  const ar = areaOf(a);
+  return (ar === '醍醐' || ar === '日野' ? '京都府京都市伏見区' : '京都府宇治市') + a;
+}
+
+// ===== 復号 =====
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: b64(ENC.salt), iterations: ENC.iter, hash: 'SHA-256' },
+    base, { name: 'AES-CBC', length: 256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: b64(ENC.iv) }, key, b64(ENC.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+function enterApp() {
+  document.getElementById('openingScreen').style.display = 'none';
+  const saved = lsGet(LS.pw, null);
+  if (saved) tryOpen(saved, true); else showLock();
+}
+function showLock() {
+  document.getElementById('lockScreen').style.display = 'flex';
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+async function tryOpen(pw, silent) {
+  try {
+    ORIGINAL = (await decrypt(pw)).map((e, i) => ({ id: 'o' + (i + 1), ...e }));
+    if (document.getElementById('pwRemember').checked || silent) lsSet(LS.pw, pw);
+    document.getElementById('lockScreen').style.display = 'none';
+    startApp();
+  } catch (e) {
+    if (silent) { lsDel(LS.pw); showLock(); }
+    else document.getElementById('lockErr').textContent = 'パスワードが違います';
+  }
+}
+function unlock() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw) tryOpen(pw, false);
+}
+function lockApp() { lsDel(LS.pw); location.reload(); }
+
+// ===== アプリ =====
+function startApp() {
+  entries = lsGet(LS.edits, null) || ORIGINAL.map(e => ({ ...e }));
+  myMemo = lsGet(LS.my, {});
+  const today = todayStr();
+  doneMap = lsGet(LS.done, { date: today, ids: [] });
+  if (doneMap.date !== today) doneMap = { date: today, ids: [] };
+  document.getElementById('appContent').style.display = 'block';
+  updateSortBtn();
+  render();
+}
+function todayStr() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function saveEntries() { lsSet(LS.edits, entries); }
+function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function norm(s) { return String(s || '').normalize('NFKC').toLowerCase(); }
+
+const FLAGS = [
+  { key: 'memo', label: '⚠ 注意事項あり', test: e => !!e.m },
+  { key: 'box', label: '宅配ボックス系', test: e => /ボックス|箱/.test(e.p) },
+  { key: 'other', label: 'あて所外', test: e => /あて所外/.test(e.p) },
+  { key: 'undone', label: '未配達のみ', test: e => !doneMap.ids.includes(e.id) },
+];
+
+function renderChips(base) {
+  const counts = { 'すべて': base.length };
+  base.forEach(e => { const a = areaOf(e.a); counts[a] = (counts[a] || 0) + 1; });
+  const names = ['すべて', ...AREAS.filter(a => counts[a]), ...(counts['その他'] ? ['その他'] : [])];
+  document.getElementById('areaChips').innerHTML = names.map(a =>
+    `<span class="chip ${a === areaFilter ? 'on' : ''}" onclick="setArea('${a}')">${a}<span class="cnt">${counts[a] || 0}</span></span>`).join('');
+  document.getElementById('flagChips').innerHTML = FLAGS.map(f =>
+    `<span class="chip flag ${flags.has(f.key) ? 'on' : ''}" onclick="toggleFlag('${f.key}')">${f.label}</span>`).join('');
+}
+function setArea(a) { areaFilter = a; render(); }
+function toggleFlag(k) { flags.has(k) ? flags.delete(k) : flags.add(k); render(); }
+
+const SORTS = ['帳票順', '住所順', '名前順'];
+function cycleSort() { sortMode = (sortMode + 1) % SORTS.length; lsSet(LS.sort, sortMode); updateSortBtn(); render(); }
+function updateSortBtn() { document.getElementById('sortBtn').textContent = '並び: ' + SORTS[sortMode]; }
+
+function render() {
+  const q = norm(document.getElementById('q').value.trim());
+  renderChips(entries);
+  let list = entries.map((e, i) => ({ e, i }));
+  if (areaFilter !== 'すべて') list = list.filter(x => areaOf(x.e.a) === areaFilter);
+  for (const f of FLAGS) if (flags.has(f.key)) list = list.filter(x => f.test(x.e));
+  if (q) list = list.filter(x => norm([x.e.n, x.e.a, x.e.p, x.e.m, myMemo[x.e.id]].join(' ')).includes(q));
+  if (sortMode === 1) list.sort((a, b) => a.e.a.replace(/^京都市伏見区|^宇治市/, '').localeCompare(b.e.a.replace(/^京都市伏見区|^宇治市/, ''), 'ja', { numeric: true }));
+  if (sortMode === 2) list.sort((a, b) => a.e.n.localeCompare(b.e.n, 'ja'));
+
+  document.getElementById('shownCount').textContent = list.length;
+  document.getElementById('totalCount').textContent = entries.length;
+  const done = entries.filter(e => doneMap.ids.includes(e.id)).length;
+  document.getElementById('progBar').style.width = (entries.length ? done / entries.length * 100 : 0) + '%';
+  document.getElementById('progText').textContent = `本日の配達済 ${done} 件`;
+
+  const el = document.getElementById('list');
+  if (!list.length) { el.innerHTML = '<div class="empty">該当する配達先がありません</div>'; return; }
+  el.innerHTML = list.map(({ e, i }) => {
+    const isDone = doneMap.ids.includes(e.id);
+    const mm = myMemo[e.id];
+    return `<div class="card ${isDone ? 'done' : ''}">
+      <div class="c-top"><span class="c-no">${i + 1}</span><span class="c-name">${esc(e.n)}</span>
+        ${e.id.startsWith('u') ? '<span class="tag-new">追加</span>' : ''}
+        <span class="c-area">${areaOf(e.a)}</span></div>
+      <div class="c-addr">${esc(e.a)}</div>
+      <div class="c-place">${esc(e.p)}</div>
+      ${e.m ? `<div class="c-memo">${esc(e.m)}</div>` : ''}
+      ${mm ? `<div class="c-mymemo">${esc(mm)}</div>` : ''}
+      ${e.d ? `<div class="c-date">実施希望時期 <b>${esc(e.d)}</b></div>` : ''}
+      <div class="c-btns">
+        <button class="b-green b-done" onclick="toggleDone('${e.id}')">${isDone ? '↩ 取消' : '✓ 配達済'}</button>
+        <button class="b-sky" onclick="openMap(${i})">地図</button>
+        <button class="b-gray" onclick="openEdit(${i})">編集</button>
+      </div></div>`;
+  }).join('');
+}
+
+function toggleDone(id) {
+  const k = doneMap.ids.indexOf(id);
+  k >= 0 ? doneMap.ids.splice(k, 1) : doneMap.ids.push(id);
+  lsSet(LS.done, doneMap); render();
+}
+function resetToday() {
+  if (!doneMap.ids.length) return toast('チェックはありません');
+  if (!confirm('本日の配達済チェックをすべて解除しますか？')) return;
+  doneMap.ids = []; lsSet(LS.done, doneMap); render();
+}
+function openMap(i) {
+  window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapQuery(entries[i].a)), '_blank');
+}
+
+// 編集
+function openEdit(i) {
+  editIdx = i;
+  const e = i >= 0 ? entries[i] : { n: '', a: '', p: '', m: '', d: '' };
+  document.getElementById('editTitle').textContent = i >= 0 ? '配達先を編集' : '配達先を追加';
+  document.getElementById('eName').value = e.n || '';
+  document.getElementById('eAddr').value = e.a || '';
+  document.getElementById('ePlace').value = e.p || '';
+  document.getElementById('eMemo').value = e.m || '';
+  document.getElementById('eDate').value = e.d || '';
+  document.getElementById('eMy').value = (i >= 0 && myMemo[e.id]) || '';
+  document.getElementById('eDel').style.display = i >= 0 ? 'block' : 'none';
+  document.getElementById('editModal').classList.add('show');
+}
+function saveEdit() {
+  const v = id => document.getElementById(id).value.trim();
+  if (!v('eName') || !v('ePlace')) return alert('お名前と指定場所は必須です');
+  const data = { n: v('eName'), a: v('eAddr'), p: v('ePlace'), m: v('eMemo'), d: v('eDate') };
+  let id;
+  if (editIdx >= 0) { id = entries[editIdx].id; Object.assign(entries[editIdx], data); }
+  else { id = 'u' + Date.now(); entries.push({ id, ...data }); }
+  const my = v('eMy'); if (my) myMemo[id] = my; else delete myMemo[id];
+  saveEntries(); lsSet(LS.my, myMemo);
+  closeModal('editModal'); render(); toast('保存しました');
+}
+function deleteEntry() {
+  if (editIdx < 0) return;
+  if (!confirm(entries[editIdx].n + ' を削除しますか？')) return;
+  delete myMemo[entries[editIdx].id];
+  entries.splice(editIdx, 1); saveEntries(); lsSet(LS.my, myMemo);
+  closeModal('editModal'); render(); toast('削除しました');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openMenu() { document.getElementById('menuModal').classList.add('show'); }
+
+// バックアップ
+function exportData() {
+  const blob = new Blob([JSON.stringify({ app: 'shitei116', entries, myMemo }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'shitei116_backup_' + todayStr() + '.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  closeModal('menuModal');
+}
+function importData(input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!Array.isArray(d.entries)) throw 0;
+      entries = d.entries; myMemo = d.myMemo || {};
+      saveEntries(); lsSet(LS.my, myMemo); render(); toast('読み込みました');
+    } catch (e) { alert('ファイルを読み込めませんでした'); }
+    input.value = ''; closeModal('menuModal');
+  };
+  r.readAsText(f);
+}
+function restoreOriginal() {
+  if (!confirm('追加・編集・削除をすべて取り消して、帳票の初期データに戻しますか？（自分用メモは残ります）')) return;
+  entries = ORIGINAL.map(e => ({ ...e })); lsDel(LS.edits); closeModal('menuModal'); render(); toast('初期データに戻しました');
+}
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 1800);
+}
+</script>
+</body>
+</html>
